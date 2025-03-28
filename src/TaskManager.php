@@ -24,7 +24,7 @@ class TaskManager
       $data[$id] = [
          "id" => $id,
          "description" => $description,
-         "status" => "in-progress",
+         "status" => "todo",
          "createdAt" => date("Y-m-d H:i:s"),
          "updatedAt" => date("Y-m-d H:i:s")
       ];
@@ -40,7 +40,7 @@ class TaskManager
       }
    }
 
-   public function updateTask($id, $description)
+   public function updateTaskById($id, $description)
    {
       $data = $this->tasks;
 
@@ -64,7 +64,7 @@ class TaskManager
       }
    }
 
-   public function deleteTask($id)
+   public function deleteTaskById($id)
    {
       $data = $this->tasks;
 
@@ -84,6 +84,54 @@ class TaskManager
          $this->displayTasks($data);
       } else {
          echo "Failed to delete task\n";
+      }
+   }
+
+   public function markTaskInProgress($id)
+   {
+      $data = $this->tasks;
+
+      $taskIndex = array_search($id, array_column($data, 'id'));
+      if ($taskIndex === false) {
+         echo "Task with ID $id not found\n";
+         return;
+      }
+
+      $data[$taskIndex]['status'] = 'in-progress';
+      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
+
+      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
+      $insert = file_put_contents($this->taskFilePath, $json);
+
+      if ($insert) {
+         echo "Task marked as in-progress successfully\n";
+         $this->displayTasks([$data[$taskIndex]]);
+      } else {
+         echo "Failed to mark task as in-progress\n";
+      }
+   }
+
+   public function markTaskDone($id)
+   {
+      $data = $this->tasks;
+
+      $taskIndex = array_search($id, array_column($data, 'id'));
+      if ($taskIndex === false) {
+         echo "Task with ID $id not found\n";
+         return;
+      }
+
+      $data[$taskIndex]['status'] = 'done';
+      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
+
+      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
+      $insert = file_put_contents($this->taskFilePath, $json);
+
+      if ($insert) {
+         echo "Task marked as done successfully\n";
+         $this->displayTasks([$data[$taskIndex]]);
+      } else {
+         echo "Failed to mark task as done\n";
       }
    }
 
