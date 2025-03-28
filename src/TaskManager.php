@@ -40,6 +40,30 @@ class TaskManager
       }
    }
 
+   public function updateTask($id, $description)
+   {
+      $data = $this->tasks;
+
+      $taskIndex = array_search($id, array_column($data, 'id'));
+      if ($taskIndex === false) {
+         echo "Task with ID $id not found\n";
+         return;
+      }
+
+      $data[$taskIndex]['description'] = $description;
+      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
+
+      $json = json_encode($data, JSON_PRETTY_PRINT);
+      $insert = file_put_contents($this->taskFilePath, $json);
+
+      if ($insert) {
+         echo "Task updated successfully\n";
+         $this->displayTasks([$data[$taskIndex]]);
+      } else {
+         echo "Failed to update task\n";
+      }
+   }
+
    public function getAllTasks()
    {
       $this->displayTasks($this->tasks);
