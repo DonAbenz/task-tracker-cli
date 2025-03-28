@@ -12,6 +12,7 @@ $taskManager = new TaskTrackerCli\TaskManager();
 match ($command) {
    'add' => $taskManager->addTask($arg1),
    'update' => $taskManager->updateTask($arg1, $arg2),
+   'delete' => $taskManager->deleteTask($arg1),
    'list' => $taskManager->getAllTasks(),
    default => print "Invalid command\n",
 };
