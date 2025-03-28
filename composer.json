@@ -1,0 +1,15 @@
+{
+    "name": "donabenz/task-tracker-cli",
+    "autoload": {
+        "psr-4": {
+            "TaskTrackerCli\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Xboss Laptop",
+            "email": "xbossabenz@gmail.com"
+        }
+    ],
+    "require": {}
+}
