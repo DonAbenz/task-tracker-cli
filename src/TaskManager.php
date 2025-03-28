@@ -2,181 +2,174 @@
 
 namespace TaskTrackerCli;
 
+use TaskTrackerCli\Task;
+
 class TaskManager
 {
-   private $tasks;
-   private $taskFilePath = __DIR__ . '/../data.json';
+   private array $tasks = [];
+   private string $taskFilePath;
 
    public function __construct()
    {
+      $this->taskFilePath = __DIR__ . '/../data.json';
+
       if (!file_exists($this->taskFilePath)) {
          file_put_contents($this->taskFilePath, json_encode([], JSON_PRETTY_PRINT));
       }
 
-      $this->tasks = (array) json_decode(file_get_contents($this->taskFilePath), true);
+      $this->loadTasksFromFile();
    }
 
-   public function addTask($description)
+   private function loadTasksFromFile(): void
    {
-      $data = $this->tasks;
-      $id = count($data) > 0 ? max(array_column($data, 'id')) + 1 : 1;
+      $data = json_decode(file_get_contents($this->taskFilePath), true);
+      $this->tasks = array_map(fn($taskData) => new Task(
+         $taskData['id'],
+         $taskData['description'],
+         $taskData['status'],
+         $taskData['createdAt'],
+         $taskData['updatedAt']
+      ), $data);
+   }
 
-      $data[$id] = [
-         "id" => $id,
-         "description" => $description,
-         "status" => "todo",
-         "createdAt" => date("Y-m-d H:i:s"),
-         "updatedAt" => date("Y-m-d H:i:s")
-      ];
-
+   private function saveTasksToFile(): bool
+   {
+      $data = array_map(fn(Task $task) => $task->toArray(), $this->tasks);
       $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
-      $insert = file_put_contents($this->taskFilePath, $json);
+      return file_put_contents($this->taskFilePath, $json) !== false;
+   }
 
-      if ($insert) {
-         echo "Task added successfully\n";
-         $this->displayTasks([$data[$id]]);
+   public function addTask(string $description): void
+   {
+      $id = count($this->tasks) > 0 ? max(array_map(fn(Task $task) => $task->getId(), $this->tasks)) + 1 : 1;
+      $task = new Task($id, $description);
+      $this->tasks[] = $task;
+
+      if ($this->saveTasksToFile()) {
+         echo "\n ✅ Task added successfully (ID: " . $task->getId() . ") \n";
       } else {
          echo "Failed to add task\n";
       }
    }
 
-   public function updateTaskById($id, $description)
+   public function updateTaskById(int $id, string $description): void
    {
-      $data = $this->tasks;
-
-      $taskIndex = array_search($id, array_column($data, 'id'));
-      if ($taskIndex === false) {
+      $task = $this->findTaskById($id);
+      if (!$task) {
          echo "Task with ID $id not found\n";
          return;
       }
 
-      $data[$taskIndex]['description'] = $description;
-      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
+      $task->setDescription($description);
 
-      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
-      $insert = file_put_contents($this->taskFilePath, $json);
-
-      if ($insert) {
-         echo "Task updated successfully\n";
-         $this->displayTasks([$data[$taskIndex]]);
+      if ($this->saveTasksToFile()) {
+         echo "\n ✅ Task updated successfully (ID: " . $task->getId() . ") \n";
       } else {
          echo "Failed to update task\n";
       }
    }
 
-   public function deleteTaskById($id)
+   public function deleteTaskById(int $id): void
    {
-      $data = $this->tasks;
+      $this->tasks = array_filter($this->tasks, fn(Task $task) => $task->getId() !== $id);
 
-      $taskIndex = array_search($id, array_column($data, 'id'));
-      if ($taskIndex === false) {
-         echo "Task with ID $id not found\n";
-         return;
-      }
-
-      unset($data[$taskIndex]);
-
-      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
-      $insert = file_put_contents($this->taskFilePath, $json);
-
-      if ($insert) {
-         echo "Task deleted successfully\n";
-         $this->displayTasks($data);
+      if ($this->saveTasksToFile()) {
+         echo "\n ✅ Task deleted successfully (ID: " . $id . ") \n";
       } else {
          echo "Failed to delete task\n";
       }
    }
 
-   public function markTaskInProgress($id)
+   public function markTaskInProgress(int $id): void
    {
-      $data = $this->tasks;
-
-      $taskIndex = array_search($id, array_column($data, 'id'));
-      if ($taskIndex === false) {
+      $task = $this->findTaskById($id);
+      if (!$task) {
          echo "Task with ID $id not found\n";
          return;
       }
 
-      $data[$taskIndex]['status'] = 'in-progress';
-      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
+      $task->setStatus('in-progress');
 
-      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
-      $insert = file_put_contents($this->taskFilePath, $json);
-
-      if ($insert) {
-         echo "Task marked as in-progress successfully\n";
-         $this->displayTasks([$data[$taskIndex]]);
-      } else {
-         echo "Failed to mark task as in-progress\n";
-      }
-   }
-
-   public function markTaskDone($id)
-   {
-      $data = $this->tasks;
-
-      $taskIndex = array_search($id, array_column($data, 'id'));
-      if ($taskIndex === false) {
-         echo "Task with ID $id not found\n";
-         return;
-      }
-
-      $data[$taskIndex]['status'] = 'done';
-      $data[$taskIndex]['updatedAt'] = date("Y-m-d H:i:s");
-
-      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
-      $insert = file_put_contents($this->taskFilePath, $json);
-
-      if ($insert) {
-         echo "Task marked as done successfully\n";
-         $this->displayTasks([$data[$taskIndex]]);
+      if ($this->saveTasksToFile()) {
+         echo "\n ✅ Task marked as in-progress\n";
       } else {
          echo "Failed to mark task as done\n";
       }
    }
 
-   public function getTasksByStatus($status = null)
+   public function markTaskDone(int $id): void
    {
-      $filteredTasks = $status ? array_filter($this->tasks, function ($task) use ($status) {
-         return isset($task['status']) && $task['status'] === $status;
-      }) : $this->tasks;
-
-      if (empty($filteredTasks)) {
-         echo "No tasks found \n";
+      $task = $this->findTaskById($id);
+      if (!$task) {
+         echo "Task with ID $id not found\n";
          return;
       }
 
+      $task->setStatus('done');
+
+      if ($this->saveTasksToFile()) {
+         echo "\n ✅ Task marked as done\n";
+      } else {
+         echo "Failed to mark task as done\n";
+      }
+   }
+
+   public function getTasksByStatus(?string $status = null): void
+   {
+      $filteredTasks = $status
+         ? array_filter($this->tasks, fn(Task $task) => $task->getStatus() === $status)
+         : $this->tasks;
+
+      if (empty($filteredTasks)) {
+         echo "No tasks found with status: " . ($status ?? "all") . "\n";
+         return;
+      }
+
+      echo "Tasks with status: " . ($status ?? "all") . "\n";
       $this->displayTasks($filteredTasks);
    }
 
-   private function displayTasks($tasks)
+   private function findTaskById(int $id): ?Task
+   {
+      foreach ($this->tasks as $task) {
+         if ($task->getId() === $id) {
+            return $task;
+         }
+      }
+      return null;
+   }
+
+   private function displayTasks(array $tasks): void
    {
       $headers = ['id', 'description', 'status', 'createdAt', 'updatedAt'];
-
-      $widths = array_map(function ($header) use ($tasks) {
-         $maxLength = strlen($header);
-         foreach ($tasks as $row) {
-            $value = $row[$header];
-            $maxLength = max($maxLength, strlen((string) $value));
-         }
-         return $maxLength;
-      }, $headers);
+      $widths = $this->calculateColumnWidths($tasks, $headers);
 
       $this->printSeparatorLine($widths);
       $this->printRow($headers, $widths);
       $this->printSeparatorLine($widths);
 
-      foreach ($tasks as $row) {
-         $rowData = array_map(function ($header) use ($row) {
-            return $row[$header];
-         }, $headers);
+      foreach ($tasks as $task) {
+         $row = $task->toArray();
+         $rowData = array_map(fn($header) => $row[$header], $headers);
          $this->printRow($rowData, $widths);
       }
 
       $this->printSeparatorLine($widths);
    }
 
-   private function printSeparatorLine($widths)
+   private function calculateColumnWidths(array $tasks, array $headers): array
+   {
+      return array_map(function ($header) use ($tasks) {
+         $maxLength = strlen($header);
+         foreach ($tasks as $task) {
+            $row = $task->toArray();
+            $maxLength = max($maxLength, strlen((string) $row[$header]));
+         }
+         return $maxLength;
+      }, $headers);
+   }
+
+   private function printSeparatorLine(array $widths): void
    {
       echo '+';
       foreach ($widths as $width) {
@@ -185,7 +178,7 @@ class TaskManager
       echo PHP_EOL;
    }
 
-   private function printRow($row, $widths)
+   private function printRow(array $row, array $widths): void
    {
       echo '|';
       foreach ($row as $key => $value) {
