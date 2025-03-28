@@ -135,9 +135,18 @@ class TaskManager
       }
    }
 
-   public function getAllTasks()
+   public function getTasksByStatus($status = null)
    {
-      $this->displayTasks($this->tasks);
+      $filteredTasks = $status ? array_filter($this->tasks, function ($task) use ($status) {
+         return isset($task['status']) && $task['status'] === $status;
+      }) : $this->tasks;
+
+      if (empty($filteredTasks)) {
+         echo "No tasks found \n";
+         return;
+      }
+
+      $this->displayTasks($filteredTasks);
    }
 
    private function displayTasks($tasks)

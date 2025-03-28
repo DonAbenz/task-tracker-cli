@@ -15,6 +15,6 @@ match ($command) {
    'delete' => $taskManager->deleteTaskById($arg1),
    'mark-in-progress' => $taskManager->markTaskInProgress($arg1),
    'mark-done' => $taskManager->markTaskDone($arg1),
-   'list' => $taskManager->getAllTasks(),
+   'list' => $taskManager->getTasksByStatus($arg1),
    default => print "Invalid command\n",
 };
