@@ -1,14 +1,14 @@
 [
    {
       "id": 1,
-      "description": "A simple JSON file containing a list of objects.",
+      "description": "A more complex JSON file.",
       "status": "todo",
       "createdAt": "2023-10-01T12:00:00Z",
       "updatedAt": "2023-10-01T12:00:00Z"
    },
    {
       "id": 2,
-      "description": "A more complex JSON file.",
+      "description": "A simple JSON file containing a list of objects.",
       "status": "in-progress",
       "createdAt": "2023-10-01T12:00:00Z",
       "updatedAt": "2023-10-01T12:00:00Z"
