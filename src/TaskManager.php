@@ -4,19 +4,51 @@ namespace TaskTrackerCli;
 
 class TaskManager
 {
+   private $tasks;
+   private $taskFilePath = __DIR__ . '/../data.json';
+
+   public function __construct()
+   {
+      if (!file_exists($this->taskFilePath)) {
+         file_put_contents($this->taskFilePath, json_encode([], JSON_PRETTY_PRINT));
+      }
+
+      $this->tasks = (array) json_decode(file_get_contents($this->taskFilePath), true);
+   }
+
+   public function addTask($description)
+   {
+      $data = $this->tasks;
+      $id = count($data) > 0 ? max(array_column($data, 'id')) + 1 : 1;
+
+      $data[$id] = [
+         "id" => $id,
+         "description" => $description,
+         "status" => "in-progress",
+         "createdAt" => date("Y-m-d H:i:s"),
+         "updatedAt" => date("Y-m-d H:i:s")
+      ];
+
+      $json = json_encode(array_values($data), JSON_PRETTY_PRINT);
+      $insert = file_put_contents($this->taskFilePath, $json);
+
+      if ($insert) {
+         echo "Task added successfully\n";
+         $this->displayTasks([$data[$id]]);
+      } else {
+         echo "Failed to add task\n";
+      }
+   }
+
    public function getAllTasks()
    {
-      $tasks = (array) json_decode(file_get_contents(__DIR__ . '/../data.json'), true);
-
-      $this->displayTasks($tasks);
+      $this->displayTasks($this->tasks);
    }
 
    private function displayTasks($tasks)
    {
-      // Define headers
       $headers = ['id', 'description', 'status', 'createdAt', 'updatedAt'];
 
-      // Calculate column widths
       $widths = array_map(function ($header) use ($tasks) {
          $maxLength = strlen($header);
          foreach ($tasks as $row) {
@@ -26,7 +58,6 @@ class TaskManager
          return $maxLength;
       }, $headers);
 
-      // Print the table
       $this->printSeparatorLine($widths);
       $this->printRow($headers, $widths);
       $this->printSeparatorLine($widths);
@@ -41,7 +72,6 @@ class TaskManager
       $this->printSeparatorLine($widths);
    }
 
-   // Helper function to print a separator line
    private function printSeparatorLine($widths)
    {
       echo '+';
@@ -51,7 +81,6 @@ class TaskManager
       echo PHP_EOL;
    }
 
-   // Helper function to print a row
    private function printRow($row, $widths)
    {
       echo '|';
