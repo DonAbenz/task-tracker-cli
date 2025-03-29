@@ -24,7 +24,7 @@ Task Tracker CLI is a command-line application inspired by the [Task Tracker Roa
 1. Clone the repository:
 
 ```bash
-   git clone https://github.com/your-username/task-tracker-cli.git
+   git clone https://github.com/DonAbenz/task-tracker-cli.git
    cd task-tracker-cli
 ```
 
